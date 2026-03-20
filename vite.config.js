@@ -17,6 +17,11 @@ export default defineConfig({
         target: 'ws://localhost:8459',
         ws: true,
         changeOrigin: true
+      },
+      '/signal': {
+        target: 'ws://localhost:8459',
+        ws: true,
+        changeOrigin: true
       }
     }
   },

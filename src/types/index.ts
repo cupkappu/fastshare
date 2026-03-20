@@ -34,3 +34,12 @@ export interface IncomingFile {
   totalChunks?: number;
   receivedChunks: number;
 }
+
+export interface P2PDevice {
+  deviceId: string;
+  displayName: string;
+  status: 'online' | 'offline' | 'busy';
+  lastSeenAt: number;
+}
+
+export type TransferMode = 'relay' | 'p2p';
