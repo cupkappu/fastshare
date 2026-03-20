@@ -1,0 +1,32 @@
+# Local development with hot reload
+# Run: docker compose -f docker-compose.dev.yml up
+
+services:
+  fastshare:
+    build:
+      context: .
+      target: builder
+    container_name: fastshare-dev
+    restart: unless-stopped
+    ports:
+      - "8459:8459"
+      - "5173:5173"
+    environment:
+      - PORT=8459
+      - HOST=0.0.0.0
+    volumes:
+      - ./src:/app/src
+      - ./server:/app/server
+      - ./dist:/app/dist
+    command: npm run dev
+
+  server:
+    build:
+      context: .
+    container_name: fastshare-server
+    restart: unless-stopped
+    ports:
+      - "8459:8459"
+    environment:
+      - PORT=8459
+      - HOST=0.0.0.0

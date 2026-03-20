@@ -1,0 +1,25 @@
+# FastShare - Centralized File Transfer Server
+#
+# Usage:
+#   1. Set your image in IMAGE_NAME below, or build locally with:
+#      docker build -t fastshare .
+#
+#   2. Run with:
+#      docker compose up -d
+
+services:
+  fastshare:
+    image: ${IMAGE_NAME:-ghcr.io/cupkappu/fastshare:latest}
+    container_name: fastshare
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8459}:8459"
+    environment:
+      - PORT=8459
+      - HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8459/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

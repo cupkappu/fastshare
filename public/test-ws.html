@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Connection Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #00ff00;
+    }
+    .status { margin: 10px 0; }
+    .success { color: #00ff00; }
+    .error { color: #ff4444; }
+    .info { color: #88ccff; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #333;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      cursor: pointer;
+    }
+    button:hover { background: #444; }
+    #log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #000;
+      border: 1px solid #333;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>FastShare WebSocket Connection Test</h1>
+  
+  <div class="status">
+    <strong>Server URL:</strong> <span id="url">ws://localhost:8080/signal</span>
+  </div>
+  
+  <div class="status">
+    <strong>Status:</strong> <span id="status" class="info">Disconnected</span>
+  </div>
+  
+  <div style="margin-top: 20px;">
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="register()">Register Device</button>
+    <button onclick="discover()">Discover Devices</button>
+    <button onclick="generateCode()">Generate Short Code</button>
+  </div>
+  
+  <div id="log">
+    <div class="info">Ready to connect...</div>
+  </div>
+  
+  <script>
+    let ws = null;
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    function connect() {
+      const url = 'ws://localhost:8080/signal';
+      log(`Connecting to ${url}...`, 'info');
+      
+      ws = new WebSocket(url);
+      
+      ws.onopen = () => {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'success';
+        log('✓ Connected to server', 'success');
+      };
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        log(`← ${data.type}: ${JSON.stringify(data.payload)}`, 'info');
+        
+        if (data.type === 'short-code-generated') {
+          log(`Your short code: ${data.payload.shortCode}`, 'success');
+        }
+        
+        if (data.type === 'device-list') {
+          log(`Devices found: ${data.payload.devices?.length || 0}`, 'info');
+        }
+      };
+      
+      ws.onclose = () => {
+        statusEl.textContent = 'Disconnected';
+        statusEl.className = 'error';
+        log('✗ Connection closed', 'error');
+      };
+      
+      ws.onerror = (err) => {
+        statusEl.textContent = 'Error';
+        statusEl.className = 'error';
+        log(`✗ WebSocket error: ${err.message}`, 'error');
+        log('Make sure the signaling server is running: npm run server', 'error');
+      };
+    }
+    
+    function disconnect() {
+      if (ws) {
+        ws.close();
+        ws = null;
+        log('Disconnected', 'info');
+      }
+    }
+    
+    function send(type, payload) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log('Not connected! Click Connect first.', 'error');
+        return;
+      }
+      ws.send(JSON.stringify({ type, payload }));
+      log(`→ ${type}: ${JSON.stringify(payload)}`, 'info');
+    }
+    
+    function register() {
+      send('register', {
+        deviceId: 'test-' + Date.now(),
+        displayName: 'Test Device',
+        capabilities: ['file-transfer']
+      });
+    }
+    
+    function discover() {
+      send('discover', {});
+    }
+    
+    function generateCode() {
+      send('generate-short-code', {
+        deviceId: 'test-' + Date.now(),
+        expiresIn: 600
+      });
+    }
+  </script>
+</body>
+</html>
