@@ -21,6 +21,7 @@ export class P2PConnection {
   private events: P2PConnectionEvents;
   private controlChannel: RTCDataChannel | null = null;
   private fileChannel: RTCDataChannel | null = null;
+  private textChannel: RTCDataChannel | null = null;
   private iceCandidatesQueue: RTCIceCandidateInit[] = [];
 
   constructor(_localDeviceId: string, role: 'offerer' | 'answerer', events: P2PConnectionEvents) {
@@ -130,6 +131,10 @@ export class P2PConnection {
       this.fileChannel.close();
       this.fileChannel = null;
     }
+    if (this.textChannel) {
+      this.textChannel.close();
+      this.textChannel = null;
+    }
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
@@ -189,6 +194,9 @@ export class P2PConnection {
       } else if (label === 'file') {
         this.fileChannel = channel;
         this.setupDataChannel(channel, 'file');
+      } else if (label === 'text') {
+        this.textChannel = channel;
+        this.setupDataChannel(channel, 'text');
       }
 
       this.events.onDataChannel(channel, label);
@@ -212,6 +220,12 @@ export class P2PConnection {
       ordered: true
     });
     this.setupDataChannel(this.fileChannel, 'file');
+
+    // Create text channel
+    this.textChannel = this.peerConnection!.createDataChannel('text', {
+      ordered: true
+    });
+    this.setupDataChannel(this.textChannel, 'text');
 
     console.log('[P2PConnection] Data channels created');
   }
@@ -242,6 +256,10 @@ export class P2PConnection {
 
   getFileChannel(): RTCDataChannel | null {
     return this.fileChannel;
+  }
+
+  getTextChannel(): RTCDataChannel | null {
+    return this.textChannel;
   }
 }
 

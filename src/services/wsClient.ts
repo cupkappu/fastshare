@@ -117,6 +117,13 @@ class WSClient {
     this.send({ type: 'clients' });
   }
 
+  sendText(to: string, text: string) {
+    this.send({
+      type: 'text',
+      payload: { to, text }
+    });
+  }
+
   onMessage(handler: MessageHandler) {
     this.messageHandlers.add(handler);
     return () => this.messageHandlers.delete(handler);
@@ -128,6 +135,10 @@ class WSClient {
 
   isConnected() {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  getWS() {
+    return this.ws;
   }
 }
 

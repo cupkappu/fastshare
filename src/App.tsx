@@ -5,11 +5,12 @@ import { DeviceList } from './components/DeviceList';
 import { FileSelector } from './components/FileSelector';
 import { TransferProgress } from './components/TransferProgress';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { SharedTextBox } from './components/SharedTextBox';
 import { fileTransferService } from './services/fileTransfer';
 import { FileTransfer, TransferMode } from './types';
 
 export default function App() {
-  const { connected, clientId, clientName, clients, error, refreshClients } = useWebSocket();
+  const { connected, clientId, clientName, clients, error, refreshClients, selectClient: selectRelayClient, sendText: sendRelayText } = useWebSocket();
   const {
     isConnected: p2pConnected,
     isConnecting: p2pConnecting,
@@ -22,6 +23,7 @@ export default function App() {
     connectWithCode,
     disconnect: p2pDisconnect,
     sendFile: p2pSendFile,
+    sendText,
     generateShortCode,
     revokeShortCode,
     refreshDevices
@@ -33,6 +35,13 @@ export default function App() {
   const [mode, setMode] = useState<TransferMode>('relay');
   const [shortCodeInput, setShortCodeInput] = useState('');
   const [showShortCodeModal, setShowShortCodeModal] = useState(false);
+
+  // Update relay remote client when selection changes
+  useEffect(() => {
+    if (mode === 'relay' && selectedClientId) {
+      selectRelayClient(selectedClientId);
+    }
+  }, [selectedClientId, mode, selectRelayClient]);
 
   useEffect(() => {
     const handleFileIncoming = ((event: CustomEvent) => {
@@ -91,16 +100,28 @@ export default function App() {
     window.addEventListener('file-progress', handleFileProgress);
     window.addEventListener('file-complete', handleFileComplete);
 
+    const handleLocalTextUpdate = ((event: CustomEvent) => {
+      const { content } = event.detail;
+      if (mode === 'p2p') {
+        sendText(content);
+      } else {
+        sendRelayText(content);
+      }
+    }) as EventListener;
+
+    window.addEventListener('local-text-update', handleLocalTextUpdate);
+
     return () => {
       window.removeEventListener('file-incoming', handleFileIncoming);
       window.removeEventListener('file-progress', handleFileProgress);
       window.removeEventListener('file-complete', handleFileComplete);
+      window.removeEventListener('local-text-update', handleLocalTextUpdate);
     };
-  }, []);
+  }, [sendText, sendRelayText, mode]);
 
   const handleRelayFileSelect = useCallback((file: File) => {
     if (!selectedClientId) {
-      alert('Please select a device first');
+      alert('请先选择一个设备');
       return;
     }
     setSelectedFile(file);
@@ -200,12 +221,14 @@ export default function App() {
       refreshDevices();
     } else {
       p2pDisconnect();
+      // Clear P2P text when switching away
+      setSelectedClientId(null);
     }
     setMode(newMode);
   };
 
   const currentError = mode === 'relay' ? error : p2pError;
-  const currentConnected = mode === 'relay' ? connected : p2pConnected;
+  const currentConnected = mode === 'relay' ? (connected && !!selectedClientId) : p2pConnected;
   const currentConnecting = mode === 'p2p' ? p2pConnecting : false;
 
   return (
@@ -242,7 +265,10 @@ export default function App() {
             <DeviceList
               clients={clients}
               selectedClientId={selectedClientId}
-              onSelectClient={setSelectedClientId}
+              onSelectClient={(id) => {
+                setSelectedClientId(id);
+                selectRelayClient(id);
+              }}
               onRefresh={refreshClients}
             />
           ) : (
@@ -323,6 +349,10 @@ export default function App() {
 
         <section className="progress-section">
           <TransferProgress transfers={transfers} />
+        </section>
+
+        <section className="shared-text-section">
+          <SharedTextBox isConnected={currentConnected} />
         </section>
       </main>
 

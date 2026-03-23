@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { signalClient } from '../services/signalClient';
 import { P2PConnection, createP2PConnection } from '../services/p2pConnection';
 import { p2pFileTransfer } from '../services/p2pFileTransfer';
+import { p2pTextShare } from '../services/p2pTextShare';
 
 export interface P2PDevice {
   deviceId: string;
@@ -22,6 +23,7 @@ export interface UseP2PReturn {
   connectWithCode: (shortCode: string) => Promise<void>;
   disconnect: () => void;
   sendFile: (file: File) => Promise<void>;
+  sendText: (text: string) => void;
   generateShortCode: () => Promise<string>;
   revokeShortCode: () => void;
   refreshDevices: () => void;
@@ -112,6 +114,12 @@ export function useP2P(): UseP2PReturn {
               p2pFileTransfer.setChannels(controlChannel, fileChannel);
             }
           }
+          if (label === 'text') {
+            const textChannel = connection.getTextChannel();
+            if (textChannel) {
+              p2pTextShare.setChannel(textChannel);
+            }
+          }
         },
         onError: (err) => setError(err instanceof Error ? err.message : 'Unknown error')
       });
@@ -165,6 +173,12 @@ export function useP2P(): UseP2PReturn {
               p2pFileTransfer.setChannels(controlChannel, fileChannel);
             }
           }
+          if (label === 'text') {
+            const textChannel = connection.getTextChannel();
+            if (textChannel) {
+              p2pTextShare.setChannel(textChannel);
+            }
+          }
         },
         onError: (err) => setError(err instanceof Error ? err.message : 'Unknown error')
       });
@@ -198,6 +212,7 @@ export function useP2P(): UseP2PReturn {
       connectionRef.current.close();
       connectionRef.current = null;
     }
+    p2pTextShare.close();
     setIsConnected(false);
     setRemoteDevice(null);
     setShortCode(null);
@@ -211,6 +226,14 @@ export function useP2P(): UseP2PReturn {
 
     const sessionId = generateUUID();
     await p2pFileTransfer.sendFile(file, sessionId);
+  }, [isConnected]);
+
+  const sendText = useCallback((text: string) => {
+    if (!isConnected) {
+      console.warn('[useP2P] Cannot send text: not connected');
+      return;
+    }
+    p2pTextShare.sendText(text);
   }, [isConnected]);
 
   const generateShortCode = useCallback(async () => {
@@ -242,6 +265,7 @@ export function useP2P(): UseP2PReturn {
     connectWithCode,
     disconnect,
     sendFile,
+    sendText,
     generateShortCode,
     revokeShortCode,
     refreshDevices
