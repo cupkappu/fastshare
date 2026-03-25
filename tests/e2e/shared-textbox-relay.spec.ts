@@ -26,7 +26,7 @@ test.describe('Shared TextBox - Relay Mode', () => {
     
     // Text area should be disabled when no device is selected
     const textarea = page.locator('.shared-textarea');
-    await expect(textarea).toBeDisabled();
+    await expect(textarea).toHaveAttribute('aria-disabled', 'true');
     
     // Should show offline badge
     const offlineBadge = page.locator('.offline-badge');
@@ -58,9 +58,7 @@ test.describe('Shared TextBox - Relay Mode', () => {
       
       // Text area should be enabled after selecting a device
       const textarea = page.locator('.shared-textarea');
-      // Note: In relay mode, text box enables when connected AND device selected
-      // The current implementation requires both
-      const isDisabled = await textarea.isDisabled();
+      const isDisabled = await textarea.getAttribute('aria-disabled');
       console.log('Text area disabled state:', isDisabled);
     }
     
@@ -163,7 +161,7 @@ test.describe('Shared TextBox - Relay Mode Two-Client Sync', () => {
         
         // Client 1's text box should now be enabled
         const textarea1 = page1.locator('.shared-textarea');
-        const isEnabled = await textarea1.isEnabled();
+        const isEnabled = (await textarea1.getAttribute('aria-disabled')) === 'false';
         console.log('Text area enabled:', isEnabled);
         
         if (isEnabled) {
@@ -218,8 +216,7 @@ test.describe('Shared TextBox - Relay Mode Two-Client Sync', () => {
         await page1.click('.clear-btn');
         
         // Check text is cleared
-        const textAfter = await textarea.inputValue();
-        expect(textAfter).toBe('');
+        await expect(textarea).toHaveText('');
         
         // Check character count reset
         const charCount = page1.locator('.char-count');

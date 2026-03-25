@@ -33,7 +33,7 @@ test.describe('Shared TextBox - P2P Mode', () => {
     
     // Text area should be disabled when not connected
     const textarea = page.locator('.shared-textarea');
-    await expect(textarea).toBeDisabled();
+    await expect(textarea).toHaveAttribute('aria-disabled', 'true');
     
     // Should show offline badge
     const offlineBadge = page.locator('.offline-badge');
@@ -173,7 +173,7 @@ test.describe('Shared TextBox - P2P Mode Connection Flow', () => {
           // Now test text sync
           // Wait for text box to be enabled
           const textarea2 = page2.locator('.shared-textarea');
-          await expect(textarea2).toBeEnabled();
+          await expect(textarea2).toHaveAttribute('aria-disabled', 'false');
           
           // Type some text
           const testText = 'Hello via P2P! P2P模式测试！';
@@ -276,14 +276,14 @@ test.describe('Shared TextBox - Mode Switching', () => {
     
     // In relay mode, text box is disabled when no device selected
     const textarea = page.locator('.shared-textarea');
-    await expect(textarea).toBeDisabled();
+    await expect(textarea).toHaveAttribute('aria-disabled', 'true');
     
     // Switch to P2P mode
     await page.click('button:has-text("P2P")');
     await page.waitForTimeout(500);
     
     // In P2P mode, text box is also disabled when not connected
-    await expect(textarea).toBeDisabled();
+    await expect(textarea).toHaveAttribute('aria-disabled', 'true');
     
     console.log('✓ Text box properly disabled in both modes when not connected');
   });
